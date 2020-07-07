@@ -75,7 +75,7 @@ for ff,fname in enumerate(files):
 
 ### TRIM AND OVERSCAN CORRECT ################################
 
-def trim_image(f, overscan_poly_order = 8):
+def trim_image(f, overscan_poly_order = 5):
     """
     trim_image returns a trimmed version of the raw image. The ARCTIC detector is structured in four quadrants which can be read out individually (Quad Mode) or as a whole (Lower Left Mode) and trim_image identifies which readout mode was used and crops the image accordingly.
         
