@@ -1,5 +1,5 @@
 """
-ARCTIC_master.py
+ARCTIC_imagered.py
 Hannah Lewis
 hlewis@virginia.edu
 2020
@@ -7,12 +7,13 @@ hlewis@virginia.edu
 Automatic reduction pipeline for transit photometry with the Astrophysical Research Consortium Imaging Camera (ARCTIC) at Apache Point Observatory (APO).
     
 to use:
-python ARCTIC_master.py [your directory of data]
+python ARCTIC_imagered.py path/to/your/data
     
-OR place ARCTIC_master.py in your folder with data and run with no argument:
-python ARCTIC_master.py
+OR place ARCTIC_imagered.py in your folder with data and run with no argument:
+
+python ARCTIC_imagered.py
     
-creates /reduced/cals/ and /reduced/data/
+Creates /reduced/cals/ and /reduced/data/ directories, and fills those directories with reduced calibration and science images.
 """
 
 import os
@@ -34,7 +35,6 @@ warnings.filterwarnings('ignore', message='Overwriting existing file')
 
 # ignore overflow errors
 warnings.filterwarnings('ignore', message='overflow encountered in sinh')
-
 
 """
 Image reduction

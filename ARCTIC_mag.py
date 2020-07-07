@@ -1,18 +1,19 @@
 """
-ARCTIC_master.py
+ARCTIC_mag.py
 Hannah Lewis
-hml8vf@virginia.edu
-2019
+hlewis@virginia.edu
+2020
     
 Automatic reduction pipeline for transit photometry with the Astrophysical Research Consortium Imaging Camera (ARCTIC) at Apache Point Observatory (APO).
     
 to use:
-python ARCTIC_master.py [your directory of data]
+python ARCTIC_mag.py path/to/your/data
     
-OR place ARCTIC_master.py in your folder with data and run with no argument:
-python ARCTIC_master.py
+OR place ARCTIC_mag.py in your folder with data and run with no argument:
+
+python ARCTIC_mag.py
     
-creates /reduced/cals/ and /reduced/data/
+Converts raw photometry to instrumental magnitudes.
 """
 
 import os

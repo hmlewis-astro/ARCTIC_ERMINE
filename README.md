@@ -20,19 +20,22 @@ edit autoexec.bat
 
 ## Usage example
 
-To run the full pipeline:
+To run the each component of the pipeline:
 
 ```sh
-python ARCTIC_master.py path/to/your/data 
+python ARCTIC_file.py path/to/your/data 
 ```
     
-OR place ARCTIC_master.py in your folder with data and run with no argument:
+OR place all pieces of the pipeline in the folder with your data and run with no argument:
 
 ```sh
-python ARCTIC_master.py
+python ARCTIC_file.py
 ```
-    
-Creates /reduced/cals/ and /reduced/data/ directories, 
+Pipeline order is:
+1. ARCTIC_imagered.py -- Creates /reduced/cals/ and /reduced/data/ directories, and fills those directories with reduced calibration and science images.
+2. ARCTIC_phot.py -- Performs aperture photometry on science images in the /reduced/data/ directory for multiple filters.
+3. ARCTIC_mag.py -- Converts raw photometry to instrumental magnitudes.
+4. ARCTIC_transit.py --Makes various plots of the relative magnitudes, flux versus time, airmass.
 
 <!--## Development setup -->
 
