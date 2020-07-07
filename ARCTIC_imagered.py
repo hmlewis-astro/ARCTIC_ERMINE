@@ -1,8 +1,8 @@
 """
 ARCTIC_master.py
 Hannah Lewis
-hml8vf@virginia.edu
-2019
+hlewis@virginia.edu
+2020
     
 Automatic reduction pipeline for transit photometry with the Astrophysical Research Consortium Imaging Camera (ARCTIC) at Apache Point Observatory (APO).
     

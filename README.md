@@ -20,7 +20,19 @@ edit autoexec.bat
 
 ## Usage example
 
-A few motivating and useful examples of how your product can be used. Spice this up with code blocks and potentially more screenshots.
+To run the full pipeline:
+
+```sh
+python ARCTIC_master.py path/to/your/data 
+```
+    
+OR place ARCTIC_master.py in your folder with data and run with no argument:
+
+```sh
+python ARCTIC_master.py
+```
+    
+Creates /reduced/cals/ and /reduced/data/ directories, 
 
 <!--## Development setup -->
 
