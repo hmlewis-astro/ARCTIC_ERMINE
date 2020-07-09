@@ -32,6 +32,8 @@ from astropy.io import ascii
 from astropy.coordinates import FK5, SkyCoord
 from astropy.wcs import WCS
 import astropy.units as u
+from astropy import modeling
+from astropy.convolution import convolve, Gaussian2DKernel, convolve_fft
 
 # ignore overwriting reduced files warnings in case you need to rerun
 warnings.filterwarnings('ignore', message='Overwriting existing file')
@@ -99,7 +101,92 @@ files = glob.glob(os.path.join(reduced_direc, "*.fits"))
 
 print('\n >>> Starting daofind...')
 
-bar = ChargingBar('   > ', max=len(files))
+#bar = ChargingBar('   > ', max=len(files))
+
+def update_coords(img, x_guess, y_guess, mask_max_counts=65000, box_width=70, plot_fit=False, smooth=True, kernel_size=10.):
+    
+    '''
+    img: 2D array. Should be the image you are analyzing
+        x_guess: int, 1st guess for the x coordinate. Needs to be closer than box_width
+        y_guess: int, 1st guess for the y coordinate. Needs to be closer than box_width
+        mask_max_counts: Set all points with counts higher than this number equal to the median
+        box_width: int,  The area to consider for the stars coordinates. Needs to be small enough to not include
+            extra stars, but big enough not to include errors on your x,y guess
+    plot_fit: bool, show a plot to the gauss fit?
+        smooth: bool, convolve image with gaussian first? The advantage of this is that it will take out some
+            of the errors caused by the image being a donut instead of a gaussian. Especially useful for
+            non-uniform PSFs, such as ARCSAT's defocused image. For ARCTIC, this may not be necessary.
+            Try it anyway though!
+        kernel_size: float, standard deviation of gaussian kernel used to smooth data (pixels). Irrevelvant
+            if smooth is set to False
+    '''
+    box_size = int(box_width/2)
+    
+    x_guess = int(x_guess)
+    y_guess=int(y_guess)
+    # cutout the part of the image around the star of interest
+    stamp = img[y_guess-box_size:y_guess+box_size,x_guess-box_size:x_guess+box_size ].astype(np.float64)
+    cutout = np.copy(stamp)
+
+    # change saturated pixels to 0, so it doesn't throw off fit
+    cutout[cutout>mask_max_counts] = 0.
+
+    if smooth:
+        # Convolve image with gaussian kernel to limit the noise
+        gauss_kernel = Gaussian2DKernel(kernel_size)
+        cutout = convolve(cutout, gauss_kernel, boundary='extend')
+    else:
+        cutout_s = cutout
+        # Subtract sky background
+    cutout -= np.median(cutout)
+    
+    # Sum pixels in x,y directions
+    x_sum = np.sum(cutout, axis=0)
+    y_sum = np.sum(cutout, axis=1)
+    
+    # Fit a gaussian to the x and y summed columns
+    offset = np.arange(box_width)-box_size
+    fitter = modeling.fitting.LevMarLSQFitter()
+    model = modeling.models.Gaussian1D()   # depending on the data you need to give some initial values
+    fitted_x = fitter(model, offset, x_sum)
+    fitted_y = fitter(model, offset, y_sum)
+    
+    # Add the offset from the fitted gaussian to the original guess
+    
+    x_cen = x_guess + fitted_x.mean
+    y_cen = y_guess + fitted_y.mean
+    x_diff = x_cen - x_guess
+    y_diff = y_cen - y_guess
+
+    print("X Guess : ", x_guess, "; X Corrected To : ", x_cen, "; Difference Of : ", (x_diff))
+    print("Y Guess : ", y_guess, "; Y Corrected To: ", y_cen, "; Difference Of : ", y_diff)
+    return x_cen, y_cen
+
+    if plot_fit:
+    
+        f, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(15,5))
+    
+        ax1.plot(offset, x_sum, 'o', color='C0', label='x offset')
+        ax1.plot(offset, y_sum, 'o', color='C1', label='y offset')
+    
+        ax1.plot(offset, fitted_x(offset), 'C0')
+        ax1.plot(offset, fitted_y(offset), 'C1')
+    
+        ax1.legend()
+    
+        m,s = np.median(stamp), np.std(stamp)
+        ax2.imshow(stamp, vmin=m-s, vmax=m+s, origin='lower', cmap='Greys_r', interpolation='nearest',
+        extent=[-box_size,box_size,-box_size,box_size])
+        ax2.plot(fitted_x.mean, fitted_y.mean, 'ro', label='updated')
+        ax2.plot(0,0, 'bo', label='guess')
+        ax2.legend()
+    
+        ax3.imshow(img, vmin=m-s, vmax=m+s, origin='lower', cmap='Greys_r', interpolation='nearest',)
+        ax3.plot(x_cen, y_cen, 'ro', markersize=1)
+        ax3.plot(x_guess, y_guess, 'bo', markersize=1)
+    
+        plt.tight_layout()
+        plt.show()
 
 for ff,fname in enumerate(files):
     hdul = pyfits.open(fname)
@@ -108,6 +195,30 @@ for ff,fname in enumerate(files):
     filt = hdul[0].header['FILTER']
     image = hdul[0].data
     
+    mean, median, std = sigma_clipped_stats(image, sigma=3., iters=10)
+    
+    sigma = 8.
+    #decrease sigma ERROR "xcentroid" (line 119)
+    
+    daofind = DAOStarFinder(threshold=sigma*std, fwhm=15., exclude_border=True)
+    sources = daofind(image - median)
+    # sources = sources[sources['xcentroid']<1800 and sources['xcentroid']>500 and sources['ycentroid']<1750 and sources['ycentroid']>1000]
+    # print sources
+    positions = (sources['xcentroid'], sources['ycentroid'])
+    #print positions
+    results = xpos, ypos = [], []
+    xy = os.path.join(reduced_direc,'xypos.txt')
+    with open(xy, 'r') as df:
+        for row in df:
+            x, y = row.split()
+            # print("First : ", x, " ", y)
+            x, y = update_coords(image, x, y, box_width = 80)
+            #print("Second : ", x, " ", y)
+            xpos.append(float(x))
+            ypos.append(float(y))
+            #print(xpos,ypos)
+    
+    '''
     results = []
     radec = os.path.join(reduced_direc,'radec.txt')
     with open(radec, 'r') as df:
@@ -144,10 +255,20 @@ for ff,fname in enumerate(files):
     refs = [ref0, ref1]
 
     plot_apertures = CircularAperture(refs, r=37.)
+    '''
+    
+    refs = [(x,y) for x,y in zip(xpos,ypos)]
+    plot_apertures = CircularAperture(refs, r=45.)
+    #plot_apertures = CircularAperture(refs, r=35.)
+    plot_annulus_in = CircularAperture(refs, r=50.)
+    plot_annulus_out = CircularAperture(refs, r=55.)
+    #plot_annulus_in = CircularAperture(refs, r=40.)
+    #plot_annulus_out = CircularAperture(refs, r=45.)
 
     _, new_fname = os.path.split(fname)
     new_fname = os.path.splitext(new_fname)[0]
 
+    '''
     if str(new_fname)[-1:] == '5':
         norm = ImageNormalize(image, interval=ZScaleInterval(), stretch=SinhStretch())
         fig = plt.figure()
@@ -160,6 +281,7 @@ for ff,fname in enumerate(files):
         plt.close()
         plt.close()
         plt.close()
+    '''
 
     radii = np.arange(1.0,60.0,1.0)
     for r in refs:
@@ -209,6 +331,6 @@ for ff,fname in enumerate(files):
             phot_table = pt.aperture_photometry(image, appers, method='exact')
             ascii.write(phot_table, new_fname_mag, delimiter='\t')
 
-    bar.next()
+    #bar.next()
 
-bar.finish()
+#bar.finish()

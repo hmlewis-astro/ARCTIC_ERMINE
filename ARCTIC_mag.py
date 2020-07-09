@@ -94,12 +94,22 @@ mag_files = glob.glob(os.path.join(results_direc, "*.mag"))
 
 print('\n >>> Deriving magnitudes and creating result files...')
 
+'''
 results = []
 radec = os.path.join(reduced_direc,'radec.txt')
 with open(radec, 'r') as df:
     for row in df:
         r, d = row.split()
         results.append({'ra':r, 'dec':d})
+'''
+
+results = xpos, ypos = [], []
+xy = os.path.join(reduced_direc,'xypos.txt')
+with open(xy, 'r') as df:
+    for row in df:
+        x, y = row.split()
+        xpos.append(float(x))
+        ypos.append(float(y))
 
 ref = range(len(results))
 

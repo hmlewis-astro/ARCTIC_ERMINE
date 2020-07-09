@@ -231,6 +231,7 @@ print('\n >>> Starting flats...')
 
 for ii in range(0,len(filters)):
     flat_idx = df[(df['filt'] == filters[ii]) & (df['objtype'] == 'Flat')].index.tolist()
+    
     if len(flat_idx) == 0:
         print('   > No flats found for the ' + str(filters[ii]) + ' filter. Continuing reductions...')
     else:
